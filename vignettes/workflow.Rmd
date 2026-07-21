@@ -1,0 +1,123 @@
+---
+title: "workflow"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{workflow}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = FALSE,
+  comment = "#>"
+)
+```
+
+```{r setup}
+library(CTSCRgof)
+```
+
+# Dataset
+
+Here we demonstrate the capabilities of our package, using a dataset simulated from standard SCR. 
+
+The packages comes pre-loaded with `simulate_SCR`, `simulate_SESCR` and `simulate_cosine` functions to simulate from standard SCR, SESCR, and the cosine model of Distiller. 
+
+```{r}
+# True parameter values
+sigma <- 0.15; lambda0 <- 0.05
+pars <- c(lambda0, sigma)
+
+# The cameras are a grid between 0 and 0.5
+K <- 25
+locs <- seq(-0.25, 0.25, length.out=sqrt(K))
+C <- matrix(unlist(expand.grid(locs, locs)), nrow = K, ncol = 2)
+
+# Activity Centers need to be known. Here they are uniform in a square of unit area
+N <- 50 # true population
+S <- matrix(runif(2*N, -0.5, 0.5), nrow = N, ncol = 2)
+
+# duration
+duration <- 10
+
+# simulate dataset
+set.seed(1)
+capthist <- simulate_SCR(S, C, duration, pars)
+head(capthist)
+```
+
+# Processing Capture Histories
+The output `capthist` is a matrix, with the first column being the continuous times of the captures, the second being the id numbers, and the third the trap numbers. 
+
+Note that the id numbers in the second column correspond to the row numbers in the input matrix `S`. This means id numbers are between `1` and `N`, with any undetected individuals resulting in unused numbers. 
+
+This format is not accepted by the functions for performing our GOF tests. Therefore the individual ID column needs to be modified so that the id numbers 1, 2, 3, ... are assigned without any missing values. Our `convertCaptHist` function performs this task.
+
+```{r}
+out <- convertCaptHist(capthist[,2], N)
+capthist2 <- cbind(capthist[,1], out$ids, capthist[,3])
+S2 <- S[out$new_order, ]
+
+```
+
+# Frequentist Time Rescaling Tests
+
+Now we will demonstrate our frequentist time rescaling tests. These tests require an activity center for each individual. First we demonstrate the result when we use the true parameter values and activity centers. 
+
+This function also requires a function that returns both the hazard and integrals of the hazard. As with the simulation functions, this package comes pre-shipped with `hazard_SCR`, `hazard_SESCR` and `hazard_cosine`. Users are able to write their own hazard functions, which need to give *exactly* the same output as these three functions. 
+```{r}
+# Time rescaling with true activity centers
+out <- timeRescaling(S2, C, duration, pars, hazard_SCR, N, comps = NULL,
+                     mask = NULL, capthist2)
+
+print(out$pvalues)
+xs <- seq(0,10,length.out=10000); ys <- dexp(xs)
+hist(out$CD_cumulation, main = "Cumulation", freq = FALSE, xlab = "Compensator Diffferences")
+lines(xs,ys)
+```
+
+To use the subsampling approach, the `subSampleTest` function can be used.
+Here we apply subsampling to the results of the *cumulation* time rescaling test.
+
+```{r}
+cds <- out$CD_cumulation
+n <- 1000
+pvalues <- numeric(n)
+for(i in 1:n){
+  pvalues[i] <- subSampleTest(cds)
+}
+
+hist(pvalues, main = "Subsampled P-Values and original p-value", xlab = "P-Values", freq = FALSE); points(out$pvalues[1,1], 0, col = "red", pch = 16)
+
+```
+
+The `timeRescaling()` function also works without providing activity centers. In that case a mask of integration points to define the survey region is required. 
+```{r}
+# Time rescaling without activity centers
+mask <- matrix(runif(8000, -0.5, 0.5), nrow = 4000)
+out <- timeRescaling(S = NULL, C, duration, pars, hazard_SCR, N, comps = NULL, mask, capthist2)
+```
+
+Included in the output are the estimated activity centers used for the calculation of hazards. As shown below, these estimates are usually close to the true values.
+```{r, fig.show="hold", out.width="50%"}
+plot(S2[,1], out$S_hat[,1], xlab = "True X coordinate", ylab = "Estimated X coordinate")
+abline(a=0,b=1)
+
+plot(S2[,2], out$S_hat[,2], xlab = "True Y coordinate", ylab = "Estimated Y coordinate")
+abline(a=0,b=1)
+```
+# Residuals
+
+```{r}
+out <- getResiduals(S2, C, duration, pars, hazard_SCR, N, comps = NULL,
+                 mask, capthist2)
+
+hist(out$resid_cam[!is.na(out$resid_cam)])
+hist(out$resid_ind)
+
+print(out)
+
+#residualPlot(out$resid_cam[!is.na(out$resid_cam)])
+
+```
