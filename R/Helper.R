@@ -38,8 +38,8 @@ empiricalAC <- function(C, capthist){
 #' @export
 
 checkCaptHist <- function(capthist, duration, K){
-  if (ncol(capthist) != 3){
-    stop("capthist must have three columns")
+  if (ncol(capthist) < 3){
+    stop("capthist must have at least three columns")
   }
 
   times <- capthist[,1]
@@ -145,9 +145,10 @@ Hazards <- function(S, C, duration, pars, times, hazard, N, capthist){
 
   out <- list()
   tau <- c(times, duration)
+  CH <- ncol(capthist)
   for(ani in 1:N){
     Ij = sum(capthist[,2] == ani)
-    capthist_ani <- matrix(0, nrow = Ij, ncol = 3)
+    capthist_ani <- matrix(0, nrow = Ij, ncol = CH)
     capthist_ani[1:Ij,] <- capthist[capthist[,2] == ani,]
     # Get hazard integrals for the individual
     out[[ani]] = hazard(S[ani,], C, duration, pars, tau, capthist_ani)$H
@@ -165,11 +166,12 @@ Integrals <- function(S, C, duration, pars, hazard, N, capthist){
 
   N <- nrow(S)
   K <- nrow(C)
+  CH <- ncol(capthist)
   out <- matrix(0, nrow = N, ncol = K)
   if(!is.null(capthist)){
     for(ani in 1:N){
       Ij = sum(capthist[,2] == ani)
-      capthist_ani <- matrix(0, nrow = Ij, ncol = 3)
+      capthist_ani <- matrix(0, nrow = Ij, ncol = CH)
       capthist_ani[1:Ij,] <- capthist[capthist[,2] == ani,]
       # Get hazard integrals for the individual
       out[ani, ] = hazard(S[ani,], C, duration, pars, duration, capthist_ani)$H
@@ -366,22 +368,23 @@ subSampleTest <- function(values, n=NULL){
 }
 
 #' Make a visually meaningful residual plot
+#' @import ggplot2
 #' @param resids the residuals
 #' @export
 
-# residualPlot <- function(resids){
-#
-#   data <- data.frame(resids)
-#   pl <- ggplot(data, aes(resids)) +
-#     stat_ecdf(geom = "point", pad = FALSE, size = 2) +
-#     geom_abline(slope=1,intercept=0) +
-#     coord_flip() +
-#     ylim(0,1) +
-#     xlim(0,1) +
-#     theme_classic() +
-#     xlab("Residuals") +
-#     theme(axis.text = element_text(size = 16),
-#           axis.title = element_text(size = 18)) +
-#     ylab("Quantiles")
-#   return(pl)
-# }
+residualPlot <- function(resids){
+
+  data <- data.frame(resid = resids)
+  pl <- ggplot2::ggplot(data, aes(resid)) +
+    ggplot2::stat_ecdf(geom = "point", pad = FALSE, size = 2) +
+    ggplot2::geom_abline(slope=1,intercept=0) +
+    ggplot2::coord_flip() +
+    ylim(0,1) +
+    xlim(0,1) +
+    ggplot2::theme_classic() +
+    xlab("Residuals") +
+    theme(axis.text = element_text(size = 16),
+          axis.title = element_text(size = 18)) +
+    ylab("Quantiles")
+  return(pl)
+}

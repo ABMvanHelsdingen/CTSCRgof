@@ -9,13 +9,21 @@ vignette: >
 
 ```{r, include = FALSE}
 knitr::opts_chunk$set(
+  warning = FALSE,
   collapse = FALSE,
-  comment = "#>"
+  comment = "",
+  fig.width = 9,
+  fig.height = 6,
+  out.width = "70%",
+  fig.align = "center"
 )
 ```
 
 ```{r setup}
 library(CTSCRgof)
+library(ggplot2)
+
+set.seed(3)
 ```
 
 # Dataset
@@ -34,7 +42,7 @@ K <- 25
 locs <- seq(-0.25, 0.25, length.out=sqrt(K))
 C <- matrix(unlist(expand.grid(locs, locs)), nrow = K, ncol = 2)
 
-# Activity Centers need to be known. Here they are uniform in a square of unit area
+# Activity Centers need to be provided. Here they are uniform in a square of unit area
 N <- 50 # true population
 S <- matrix(runif(2*N, -0.5, 0.5), nrow = N, ncol = 2)
 
@@ -58,6 +66,7 @@ This format is not accepted by the functions for performing our GOF tests. There
 out <- convertCaptHist(capthist[,2], N)
 capthist2 <- cbind(capthist[,1], out$ids, capthist[,3])
 S2 <- S[out$new_order, ]
+m <- max(capthist2[,2]) # number of unique detected individuals
 
 ```
 
@@ -71,53 +80,68 @@ This function also requires a function that returns both the hazard and integral
 out <- timeRescaling(S2, C, duration, pars, hazard_SCR, N, comps = NULL,
                      mask = NULL, capthist2)
 
+# Print out p-values
 print(out$pvalues)
-xs <- seq(0,10,length.out=10000); ys <- dexp(xs)
-hist(out$CD_cumulation, main = "Cumulation", freq = FALSE, xlab = "Compensator Diffferences")
-lines(xs,ys)
+
+pl <- ggplot(data = data.frame(cd = out$CD_cumulation)) +
+  geom_histogram(aes(x=cd,after_stat(density)), fill = "grey", colour = "black", binwidth = 1, boundary = 0) +
+  theme_classic() +
+  labs(title = "Cumulation", x = "Compensator Differences",
+       y = "Density") +
+  stat_function(
+    fun = dexp, 
+    args = list(rate = 1), 
+    color = "blue", 
+    linewidth = 1)
+
+pl
 ```
 
-To use the subsampling approach, the `subSampleTest` function can be used.
+Sometimes these p-values can be quite conservative. This can be corrected with a subsampling approach implemented with the `subSampleTest` function.
 Here we apply subsampling to the results of the *cumulation* time rescaling test.
 
 ```{r}
+# Subsampling for cumulation test
 cds <- out$CD_cumulation
-n <- 1000
-pvalues <- numeric(n)
-for(i in 1:n){
-  pvalues[i] <- subSampleTest(cds)
-}
+subSampleTest(cds)
 
-hist(pvalues, main = "Subsampled P-Values and original p-value", xlab = "P-Values", freq = FALSE); points(out$pvalues[1,1], 0, col = "red", pch = 16)
+# Subsampling for superposition test
+cds <- out$CD_cumulation
+subSampleTest(cds)
 
 ```
 
+# Activity Centers
+
 The `timeRescaling()` function also works without providing activity centers. In that case a mask of integration points to define the survey region is required. 
 ```{r}
-# Time rescaling without activity centers
-mask <- matrix(runif(8000, -0.5, 0.5), nrow = 4000)
+mask <- matrix(runif(8000, -0.5, 0.5), nrow = 4000) # 4000 random points
 out <- timeRescaling(S = NULL, C, duration, pars, hazard_SCR, N, comps = NULL, mask, capthist2)
 ```
 
 Included in the output are the estimated activity centers used for the calculation of hazards. As shown below, these estimates are usually close to the true values.
-```{r, fig.show="hold", out.width="50%"}
-plot(S2[,1], out$S_hat[,1], xlab = "True X coordinate", ylab = "Estimated X coordinate")
-abline(a=0,b=1)
+```{r, fig.show="hold"}
 
-plot(S2[,2], out$S_hat[,2], xlab = "True Y coordinate", ylab = "Estimated Y coordinate")
-abline(a=0,b=1)
+data <- data.frame(true = c(S2[1:m,1], S2[1:m,2]), est = c(out$S_hat[1:m,1], out$S_hat[1:m,2]), axis = rep(c("X","Y"), each = m))
+
+pl <- ggplot(data) +
+  geom_point(aes(x=true,y=est)) +
+  facet_wrap(~axis, nrow = 2) +
+  theme_classic() +
+  geom_abline(a=0,b=1) +
+  labs(title = "Activity Centers", x = "True AC", y = "Estimated AC")
+pl
 ```
+
 # Residuals
+
+Finally we generate the trap and individual residuals using `getResiduals`. The Q-Q plots show that the residuals approximately follow the assumed uniform distribution between 0 and 1. 
 
 ```{r}
 out <- getResiduals(S2, C, duration, pars, hazard_SCR, N, comps = NULL,
                  mask, capthist2)
 
-hist(out$resid_cam[!is.na(out$resid_cam)])
-hist(out$resid_ind)
-
-print(out)
-
-#residualPlot(out$resid_cam[!is.na(out$resid_cam)])
+residualPlot(out$resid_cam)
+residualPlot(out$resid_ind)
 
 ```
