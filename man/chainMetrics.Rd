@@ -20,7 +20,8 @@ individual IDs numbered 1:m in the second, and trap IDs numbered 1:K in the thir
 \item{duration}{duration of survey}
 }
 \description{
-As discussed in Appendix A. Can serve as the \code{metric} input to \code{runPPC()}.
+As discussed in Appendix D. Can serve as the \code{metric} input to \code{runPPC()}.
+Maximum, mean and median chain length, in that order
 }
 \details{
 \code{data}, \code{N}, \code{K} and \code{duration} are not required for this metric

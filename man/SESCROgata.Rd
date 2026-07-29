@@ -11,7 +11,7 @@ SESCROgata(mu, beta, d, mu0, K, t)
 
 \item{beta}{temporal decay of self-excitement}
 
-\item{d}{self-excitement over space (NxN)}
+\item{d}{self-excitement over space (KxK)}
 
 \item{mu0}{volume of baseline rate across all streams}
 

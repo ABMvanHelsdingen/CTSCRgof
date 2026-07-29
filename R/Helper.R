@@ -257,7 +257,7 @@ trans_matrix <- function(s, C, lambda0, beta, Dratio, sigma){
 #' Not designed to be called except within simSESCR()
 #' @param mu baseline rate for each stream
 #' @param beta temporal decay of self-excitement
-#' @param d self-excitement over space (NxN)
+#' @param d self-excitement over space (KxK)
 #' @param mu0 volume of baseline rate across all streams
 #' @param K number of cameras and streams
 #' @param t duration of survey

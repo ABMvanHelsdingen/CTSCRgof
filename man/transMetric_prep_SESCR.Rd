@@ -22,6 +22,6 @@ transMetric_prep_SESCR(S, C, duration = NULL, pars, hazard, capthist)
 individual IDs numbered 1:m in the second, and trap IDs numbered 1:K in the third}
 }
 \description{
-For SESCR only. Transition matrix metric discussed in Appendix A
+For SESCR only. Transition matrix metric discussed in Appendix D
 Can serve as the \code{prep} input to \code{runPPC()}.
 }

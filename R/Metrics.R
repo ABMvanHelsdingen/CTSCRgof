@@ -1,6 +1,7 @@
 #' Chain metrics
 #'
-#' As discussed in Appendix A. Can serve as the `metric` input to `runPPC()`.
+#' As discussed in Appendix D. Can serve as the `metric` input to `runPPC()`.
+#' Maximum, mean and median chain length, in that order
 #'
 #' `data`, `N`, `K` and `duration` are not required for this metric
 #'
@@ -41,7 +42,7 @@ chainMetrics <- function(data = NULL, capthist,
 #' FT Metric Preparation
 #'
 #' FT metrics discussed in Choo et al, 2024 and other works.
-#' Can serve as the `prep` input to `runPPC()`.
+#' Can serve as the `prep` input to `runPPC()` when `metric=FTMetrics`.
 #'
 #' @inheritParams timeRescaling
 #' @export
@@ -59,6 +60,7 @@ FTMetrics_prep <- function(S, C, duration, pars,
 #' FT metrics
 #'
 #' FT metrics discussed in Choo et al, 2024 and other works.
+#' FT-ind-trap, FT-individuals and FT-traps metrics, in that order
 #' Can serve as the `metric` input to `runPPC()`.
 #'
 #' `duration` is not required for this metric
@@ -94,7 +96,7 @@ FTMetrics <- function(data, capthist, N, K, duration = NULL){
 
 #' FT Transition Metric Preparation
 #'
-#' For standard SCR only. Transition matrix metric discussed in Appendix A
+#' For standard SCR only. Transition matrix metric discussed in Appendix D
 #' Can serve as the `prep` input to `runPPC()`.
 #'
 #' @inheritParams timeRescaling
@@ -129,7 +131,7 @@ transMetric_prep_SCR <- function(S, C, duration, pars,
 
 #' FT Transition Metric Preparation
 #'
-#' For SESCR only. Transition matrix metric discussed in Appendix A
+#' For SESCR only. Transition matrix metric discussed in Appendix D
 #' Can serve as the `prep` input to `runPPC()`.
 #'
 #' @inheritParams timeRescaling
@@ -174,7 +176,7 @@ transMetric_prep_SESCR <- function(S, C, duration = NULL, pars,
 
 #' FT Transition Metric Preparation
 #'
-#' As discussed in Appendix A. Can serve as the `metric` input to `runPPC()`.
+#' As discussed in Appendix D. Can serve as the `metric` input to `runPPC()`.
 #'
 #' `N` and duration` are not required for this metric
 #' @inheritParams chainMetrics

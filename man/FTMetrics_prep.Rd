@@ -23,5 +23,5 @@ individual IDs numbered 1:m in the second, and trap IDs numbered 1:K in the thir
 }
 \description{
 FT metrics discussed in Choo et al, 2024 and other works.
-Can serve as the \code{prep} input to \code{runPPC()}.
+Can serve as the \code{prep} input to \code{runPPC()} when \code{metric=FTMetrics}.
 }

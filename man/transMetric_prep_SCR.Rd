@@ -22,6 +22,6 @@ transMetric_prep_SCR(S, C, duration, pars, hazard, capthist)
 individual IDs numbered 1:m in the second, and trap IDs numbered 1:K in the third}
 }
 \description{
-For standard SCR only. Transition matrix metric discussed in Appendix A
+For standard SCR only. Transition matrix metric discussed in Appendix D
 Can serve as the \code{prep} input to \code{runPPC()}.
 }

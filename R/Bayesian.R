@@ -16,10 +16,11 @@
 #' @param prep auxillary function needed for modes 1 and 2
 #' @param mode Type of PPC metric, see details
 #' @param n_metrics number of scalar metrics to compute
+#' @param progress If TRUE, prints every 100th iteration
 #' @export
 
 runPPC <- function(S, C, duration, samples, Z, hazard, simulate, metric, prep,
-                   mode = 0, n_metrics = 1, capthist){
+                   mode = 0, n_metrics = 1, progress = FALSE, capthist){
 
   times <- capthist[,1]
   ids <- capthist[,2]
@@ -84,7 +85,7 @@ runPPC <- function(S, C, duration, samples, Z, hazard, simulate, metric, prep,
 
     }
 
-    if (i %% 100 == 0){
+    if ((i %% 100 == 0) && progress){
       print(i)
     }
   }
@@ -95,9 +96,6 @@ runPPC <- function(S, C, duration, samples, Z, hazard, simulate, metric, prep,
     # Ties count as half above, half below
     BPV[j] <- BPV[j] + 0.5*mean(metrics_sim[,j] == metrics_data[,j])
   }
-
-  print(mean(info_sum)); print(mean(data_sum))
-  print(summary(info_sum)); print(summary(data_sum))
 
   return(list(P_values = BPV, metrics_sim = metrics_sim, metrics_data = metrics_data))
 }

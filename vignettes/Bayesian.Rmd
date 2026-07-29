@@ -1,0 +1,262 @@
+---
+title: "Bayesian GOF"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{bayesian}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  warning = FALSE,
+  collapse = FALSE,
+  comment = "",
+  fig.width = 9,
+  fig.height = 6,
+  out.width = "70%",
+  fig.align = "center"
+)
+```
+
+```{r setup}
+library(CTSCRgof)
+library(ggplot2)
+library(nimble)
+
+set.seed(3)
+```
+
+# Dataset
+
+Here we demonstrate the capabilities of our package, using a dataset simulated from standard SCR. 
+
+The packages comes pre-loaded with `simulate_SCR`, `simulate_SESCR` and `simulate_cosine` functions to simulate from standard SCR, SESCR, and the cosine model of Distiller. 
+
+```{r}
+# True parameter values
+sigma <- 0.15; lambda0 <- 0.05
+pars <- c(lambda0, sigma)
+
+# The cameras are a grid between 0 and 0.5
+K <- 25
+locs <- seq(-0.25, 0.25, length.out=sqrt(K))
+C <- matrix(unlist(expand.grid(locs, locs)), nrow = K, ncol = 2)
+
+# Activity Centers need to be provided. Here they are uniform in a square of unit area
+N <- 50 # true population
+S <- matrix(runif(2*N, -0.5, 0.5), nrow = N, ncol = 2)
+
+# duration
+duration <- 10
+
+# simulate dataset
+set.seed(1)
+capthist <- simulate_SCR(S, C, duration, pars)
+head(capthist)
+```
+
+# Processing Capture Histories
+The output `capthist` is a matrix, with the first column being the continuous times of the captures, the second being the id numbers, and the third the trap numbers. 
+
+Note that the id numbers in the second column correspond to the row numbers in the input matrix `S`. This means id numbers are between `1` and `N`, with any undetected individuals resulting in unused numbers. 
+
+This format is not accepted by the functions for performing our GOF tests. Therefore the individual ID column needs to be modified so that the id numbers 1, 2, 3, ... are assigned without any missing values. Our `convertCaptHist` function performs this task.
+
+```{r}
+out <- convertCaptHist(capthist[,2], N)
+capthist2 <- cbind(capthist[,1], out$ids, capthist[,3])
+S2 <- S[out$new_order, ]
+m <- max(capthist2[,2]) # number of unique detected individuals
+
+```
+# SCR Likelihood
+
+The focus of this package is on Goodness of Fit tests, rather than fitting models. Because there are no fitting functions within the package, a hidden chunk contains functions for sampling from the posterior.
+
+```{r, echo = FALSE}
+
+dSCR_DA <- nimbleFunction(
+  run = function(x = double(2),
+                 K = integer(0), # number of cameras
+                 m = integer(0), # number of detected animals
+                 Nobs = integer(0), # total number of detections
+                 C = double(2), # 2D camera locations
+                 z = double(1), # binary indicators for unobserved animals
+                 M = integer(0), # super-population size
+                 psi = double(0), # probability that unobserved animals exist
+                 lambda0 = double(0), # detection rate at ac for the baseline
+                 s = double(2), # activity centers
+                 sigma = double(0), # Home Range Covariance
+                 log = integer(0, default = 0)) {
+    returnType(double(0))
+    times <- x[,1] # entry Nobs + 1 is the survey duration
+    cameras <- x[,3] # cameras of each detection
+    animals <- x[,2] # individuals of each detection
+    
+    
+    #Indexing scheme:
+    #i and k for cameras, j for times/events, ani for individual animals
+    
+    
+    # Background detection rates (i.e. the home range) is a bivariate normal
+    loci <- numeric(2)
+    DF <- matrix(0, nrow = m, ncol = K) # Detectability at each animal-camera combination
+  
+    for(ani in 1:m){
+      for(k in 1:K){
+        loci = C[k, ] - s[ani, ]
+        dist2 = loci[1]^2 + loci[2]^2
+        DF[ani, k] = exp(-dist2/(2*sigma^2))
+      }
+    }
+    
+    duration = times[(Nobs+1)]
+    
+    
+    #Third term of NLL: Sum of the log of detection rates when detections occur. 
+    nll = 0
+    for(j in 1:Nobs){
+      An = animals[j]
+      Cam = cameras[j]
+      # Calculate lambda at the time of detection
+      nll = nll - log(DF[An,Cam])
+    }
+    
+    nll = nll - Nobs * log(lambda0)
+    nll = nll + sum(DF) * (lambda0 * duration) # integrals of detection rates
+    
+    #CONTRIBUTION TO LIKELIHOOD FROM UNDETECTED ANIMALS
+    
+    for(uani in 1:(M-m)){
+      if (z[uani] > 0){
+        DFR = 0
+        for(k in 1:K){
+          loci = C[k, ] - s[(m+uani), ]
+          dist2 = loci[1]^2 + loci[2]^2
+          DFR = DFR + exp(-dist2/(2*sigma^2))
+        }
+        nll = nll + lambda0*duration*DFR
+      }
+    }
+    
+    nll = nll - m*log(psi)
+    
+    
+    if(log) return(-1*nll)
+    else return(exp(-1*nll))
+  })
+
+
+assign('dSCR_DA', dSCR_DA, .GlobalEnv)
+
+
+mcSCR_DA <- nimbleCode({
+  # Priors
+  for(i in 1:M){
+    s[i, 1] ~ dunif(bounds[1], bounds[2])
+    s[i, 2] ~ dunif(bounds[3], bounds[4])
+  }
+  
+  
+  psi ~ dbeta(1,1)
+  lambda0 ~ dunif(1e-20, 1)
+  sigma ~ dunif(log(0.5/area), 10)
+  Sigma <- sqrt(1/(2*exp(sigma)))
+  
+  for(i in 1:(M-m)){
+    z[i] ~ dbern(psi)
+  }
+  
+  
+  # Likelihood
+  events[,] ~ dSCR_DA(K = K, m = m, Nobs = Nobs, C = C[,],
+                         z = z[], M = M, psi = psi, lambda0 = lambda0, 
+                         s = s[,], sigma = Sigma)
+  
+  Nind <- sum(z[1:(M-m)]) + m
+  
+})
+
+
+```
+
+# Run MCMC in `NIMBLE`
+
+The code below runs MCMC chains in the package `NIMBLE`. It generates 2500 samples from the posterior. 
+
+
+```{r, cache = TRUE, warning = FALSE, message = FALSE}
+
+# Starting ACs are the empirical centroids for observed animals, random for the others.
+M <- 200 # Superpopulation size
+bounds <- c(-0.5, 0.5, -0.5, 0.5)
+Nobs <- nrow(capthist2)
+
+# Constants
+constants <- list(K = K, m = m, Nobs = Nobs, area = 1,  bounds = bounds, C = C, M = M)
+
+initAC = matrix(0, nrow = M, ncol = 2)
+initAC[,1] = runif(M,bounds[1],bounds[2])
+initAC[,2] = runif(M,bounds[3],bounds[4])
+initAC[1:m, ] = empiricalAC(C, capthist2)
+  
+  # Starting true population is twice the number of observed animals
+initsList <- list(lambda0 = 0.05, sigma = 3, s = initAC, psi = 2*m/M, 
+                    z = c(rep(1,m),rep(0,M - 2*m)))
+  
+
+# NIMBLE function requires as data a capthist and duration
+events <- matrix(0, nrow = Nobs + 1, ncol = 3)
+events[1:Nobs, ] <- capthist2
+events[(Nobs+1), 1] <- duration
+data <- list(events = events)
+  
+# Setting up and configuring NIMBLE model
+Hmodel <- nimbleModel(mcSCR_DA, constants = constants, 
+                      data = data, inits = initsList)
+  
+compiled <- compileNimble(Hmodel)
+configured <- configureMCMC(compiled, monitors = c("Nind", "lambda0", "Sigma","s", "z"))
+configured$removeSamplers('s', print = FALSE)
+for(ani in 1:M){
+  configured$addSampler(target = paste('s[',ani,',1:2]',sep=""), type = 'RW_block', control = list(adaptScaleOnly = TRUE),
+                        silent = TRUE)
+}
+  
+  
+built <- buildMCMC(configured)
+mcmc <- compileNimble(built)
+  
+# Run MCMC Chain in NIMBLE
+mcmc.out <- runMCMC(mcmc = mcmc, niter = 3000, nchains = 1, nburnin = 1000, thin =8, summary = TRUE)
+```
+# Bayesian PPCs
+
+The code below uses the `runPPC()` function to run Bayesian PPCs. 
+The function requires posterior samples for the parameters, data augmentation and activity centers.
+
+```{r}
+# Process MCMC output
+posterior <- mcmc.out$samples
+S <- posterior[, 4:(3 + 2*M)] # Activity centers
+samples <- posterior[, c(3,2)] # lambda0 and sigma
+Z <- posterior[, (4 + 2*M):(3 + 3 * M - m)]
+out <- runPPC(S,C,duration,samples,Z,hazard_SCR,simulate_SCR,
+              FTMetrics, FTMetrics_prep,
+              mode=1,n_metrics=3,capthist=capthist2)
+
+print(out$P_values)
+
+data <- data.frame(sim = c(out$metrics_sim[,1], out$metrics_sim[,2], out$metrics_sim[,3]), sample = c(out$metrics_data[,1], out$metrics_data[,2], out$metrics_data[,3]), metric = rep(c("FT-ind-trap", "FT-individuals", "FT-traps"), each = nrow(out$metrics_sim)))
+
+pl <- ggplot(data) +
+  facet_wrap(~metric, scales = "free") +
+  geom_point(aes(x=sim,y=sample,col=metric)) +
+  theme_classic() +
+  labs(x = "Simulated Data", y = "Actual Data")
+  geom_abline(slope=1,intercept=0)
+
+pl
+
+```

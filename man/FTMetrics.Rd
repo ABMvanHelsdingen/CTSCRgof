@@ -21,6 +21,7 @@ individual IDs numbered 1:m in the second, and trap IDs numbered 1:K in the thir
 }
 \description{
 FT metrics discussed in Choo et al, 2024 and other works.
+FT-ind-trap, FT-individuals and FT-traps metrics, in that order
 Can serve as the \code{metric} input to \code{runPPC()}.
 }
 \details{

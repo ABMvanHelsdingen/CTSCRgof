@@ -8,5 +8,5 @@ A generic function for Bayesian Posterior Predictive Checks (PPCs) can be found 
 A function for the hazard function of the continuous-time SCR model must be provided for all GOF tests. *Hazards.R* includes hazard functions for three SCR models mentioned in the text. The Bayesian tests also require a simulation function. The file *Simulation.R* includes simulation functions for the same three models.<br/>
 
 
-The vignette simulates a SCR model and demonstrates all the frequentist GOF tests.
+The vignettes simulate a SCR model demonstrate all GOF functions and tests, in both Bayesian and frequentist frameworks.
 
