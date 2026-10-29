@@ -16,11 +16,11 @@
 #' @param prep auxillary function needed for modes 1 and 2
 #' @param mode Type of PPC metric, see details
 #' @param n_metrics number of scalar metrics to compute
-#' @param progress If TRUE, prints every 100th iteration
+#' @param progress Print every progress-th iteration (default = 1000), unless progress=0
 #' @export
 
 runPPC <- function(S, C, duration, samples, Z, hazard, simulate, metric, prep,
-                   mode = 0, n_metrics = 1, progress = FALSE, capthist){
+                   mode = 0, n_metrics = 1, progress = 1000, capthist){
 
   times <- capthist[,1]
   ids <- capthist[,2]
@@ -41,7 +41,7 @@ runPPC <- function(S, C, duration, samples, Z, hazard, simulate, metric, prep,
   if (ncol(Z) == (M - m)){
     Z = cbind(matrix(1,nrow=I,ncol=m), Z)
   } else if (ncol(Z) != I){
-    stop("Z must either have 2M or 2(M-m) columns")
+    stop("Z must either have M or (M-m) columns")
   }
 
 
@@ -51,7 +51,7 @@ runPPC <- function(S, C, duration, samples, Z, hazard, simulate, metric, prep,
   info_sum <- data_sum <- numeric(I)
 
   if (mode == 0){
-    metrics_data[1:I, ] <- metric(data = NULL, capthist)
+    metrics_data[1:I, ] <- matrix(rep(metric(data = NULL, capthist), each = I), byrow = TRUE)
   }
 
   for(i in 1:I){
@@ -67,6 +67,9 @@ runPPC <- function(S, C, duration, samples, Z, hazard, simulate, metric, prep,
 
       metrics_sim[i,] <- metric(data = NULL, capthist_sim, N = NULL, K = NULL,
                                  duration = NULL)
+      if(sum(is.na(metrics_sim[i,])) > 0){
+        print(capthist_sim)
+      }
     } else if (mode == 1){
       info <- prep(S_i, C, duration, pars_i,
                   hazard, capthist = NULL)
@@ -85,7 +88,7 @@ runPPC <- function(S, C, duration, samples, Z, hazard, simulate, metric, prep,
 
     }
 
-    if ((i %% 100 == 0) && progress){
+    if ((progress > 0) && (i %% progress == 0)){
       print(i)
     }
   }

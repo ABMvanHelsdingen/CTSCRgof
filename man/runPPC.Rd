@@ -16,7 +16,7 @@ runPPC(
   prep,
   mode = 0,
   n_metrics = 1,
-  progress = FALSE,
+  progress = 1000,
   capthist
 )
 }
@@ -43,7 +43,7 @@ runPPC(
 
 \item{n_metrics}{number of scalar metrics to compute}
 
-\item{progress}{If TRUE, prints every 100th iteration}
+\item{progress}{Print every progress-th iteration (default = 1000), unless progress=0}
 
 \item{capthist}{3-column matrix giving times, ids and trap ids for each detection.
 \code{capthist} must be have continuous detection times in the first column,

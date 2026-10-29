@@ -1,6 +1,6 @@
 #' Chain metrics
 #'
-#' As discussed in Appendix D. Can serve as the `metric` input to `runPPC()`.
+#' As discussed in Appendix D. Can serve as the `metric` input to `runPPC()` when `mode=0`.
 #' Maximum, mean and median chain length, in that order
 #'
 #' `data`, `N`, `K` and `duration` are not required for this metric
@@ -25,12 +25,14 @@ chainMetrics <- function(data = NULL, capthist,
     return(output)
   }
 
-  m <- length(unique(ids))
+  anis <- unique(ids)
+  m <- length(anis)
   chains <- numeric(m)
 
-  for(ani in unique(ids)){
+  for(i in 1:m){
+    ani <- anis[i]
     cameras_ani <- cameras[ids == ani]
-    chains[ani] <- max(rle(cameras_ani)$lengths)
+    chains[i] <- max(rle(cameras_ani)$lengths)
   }
 
   output[1] <- max(chains)
@@ -61,7 +63,7 @@ FTMetrics_prep <- function(S, C, duration, pars,
 #'
 #' FT metrics discussed in Choo et al, 2024 and other works.
 #' FT-ind-trap, FT-individuals and FT-traps metrics, in that order
-#' Can serve as the `metric` input to `runPPC()`.
+#' Can serve as the `metric` input to `runPPC()` when `mode=1`.
 #'
 #' `duration` is not required for this metric
 #' @inheritParams chainMetrics
@@ -176,7 +178,7 @@ transMetric_prep_SESCR <- function(S, C, duration = NULL, pars,
 
 #' FT Transition Metric Preparation
 #'
-#' As discussed in Appendix D. Can serve as the `metric` input to `runPPC()`.
+#' As discussed in Appendix D. Can serve as the `metric` input to `runPPC()` when `mode=2`.
 #'
 #' `N` and duration` are not required for this metric
 #' @inheritParams chainMetrics

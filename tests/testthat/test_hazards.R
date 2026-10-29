@@ -60,7 +60,7 @@ test_that("Cosine hazard",{
   C[,1] <- c(0,1,0,1)
   C[,2] <- c(0,0,1,1)
   duration <- 4*pi
-  pars <- c(1,1,1)
+  pars <- c(1,1,1,1,0)
   times <- c(1,2,3) * pi
   time_rates <- 1 + cos(2*pi*times)
   out <- hazard_cosine(s,C,duration,pars,times,NULL)

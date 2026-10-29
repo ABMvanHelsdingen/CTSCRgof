@@ -198,7 +198,7 @@ hazard_cosine <- function(s, C, duration, pars, times, capthist = NULL){
   if (pars[4] <= 0){
     stop("F must be positive")
   }
-  if ((pars[5] <= 0) || (pars[5] > (1/pars[4]))){
+  if ((pars[5] < 0) || (pars[5] > (1/pars[4]))){
     stop("P must be between 0 and 1/F")
   }
 

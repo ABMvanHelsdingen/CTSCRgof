@@ -32,7 +32,7 @@ Returns a list with elements \code{h} and \code{H}, each being a matrix with a r
 and a column for each trap. The values of \code{h} are hazards and \code{H} are integrals of \code{h} since time zero.
 
 \eqn{\lambda_0} is the rate of detections at the activity center, and \eqn{\sigma} the spatial scale. \cr
-The hazard of standard SCR is multiplied by \eqn{1 + A \text{cos}(2\pi F(t - P))} \cr
+The hazard of standard SCR is multiplied by \eqn{1 + A\;\text{cos}(2\pi F(t - P))} \cr
 \eqn{A} is the magnitude of the wave, 0 = standard SCR and 1=max possible. \cr
 \eqn{F} is the frequency of the wave \cr
 \eqn{P} is the phase shift. The maxima of the wave occur at P + \eqn{\frac{k}{F}} for k = 0,1,2...

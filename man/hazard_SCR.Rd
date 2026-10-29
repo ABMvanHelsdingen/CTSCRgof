@@ -31,5 +31,5 @@ Calculates the hazard and integrals of the hazard for the simplest possible SCR 
 Returns a list with elements \code{h} and \code{H}, each being a matrix with a row for each value of times
 and a column for each trap. The values of \code{h} are hazards and \code{H} are integrals of \code{h} since time zero.
 
-\eqn{\lambda_0} is the rate of detections at the activity center, and \eqn{\sigma} the home range size.
+\eqn{\lambda_0} is the rate of detections at the activity center, and \eqn{\sigma} the spatial scale.
 }
