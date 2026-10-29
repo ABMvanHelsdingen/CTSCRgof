@@ -13,7 +13,7 @@ simulate_cosine(S, C, duration, pars)
 
 \item{duration}{duration of survey}
 
-\item{pars}{vector of pars: \eqn{\lambda_0}, \eqn{\sigma} and \eqn{\phi}}
+\item{pars}{vector of pars: \eqn{\lambda_0}, \eqn{\sigma}, \eqn{A}, \eqn{F}, \eqn{P}}
 }
 \value{
 individuals are numbered according to their row in \code{S}.

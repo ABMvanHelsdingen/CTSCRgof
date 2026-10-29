@@ -30,7 +30,7 @@ set.seed(3)
 
 Here we demonstrate the capabilities of our package, using a dataset simulated from standard SCR. 
 
-The packages comes pre-loaded with `simulate_SCR`, `simulate_SESCR` and `simulate_cosine` functions to simulate from standard SCR, SESCR, and the cosine model of Distiller. 
+The packages comes pre-loaded with `simulate_SCR`, `simulate_SESCR` and `simulate_cosine` functions to simulate from standard SCR, SESCR, and a model where the detection rate over time is a cosine wave.
 
 ```{r}
 # True parameter values

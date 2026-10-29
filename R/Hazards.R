@@ -5,7 +5,7 @@
 #' Returns a list with elements `h` and `H`, each being a matrix with a row for each value of times
 #' and a column for each trap. The values of `h` are hazards and `H` are integrals of `h` since time zero.
 #'
-#' \eqn{\lambda_0} is the rate of detections at the activity center, and \eqn{\sigma} the home range size.
+#' \eqn{\lambda_0} is the rate of detections at the activity center, and \eqn{\sigma} the spatial scale.
 #'
 #' @param s activity center of a single individual
 #' @param C matrix of camera or trap locations
@@ -169,16 +169,20 @@ hazard_SESCR <- function(s, C, duration, pars, times, capthist){
 
 #' Cosine SCR Hazard function
 #'
-#' Calculates the hazard and integrals of the hazard for a cosine wave detection function. See the PhD thesis of G. Distiller, 2016
+#' Calculates the hazard and integrals of the hazard for a cosine wave detection function.
 #'
 #' Returns a list with elements `h` and `H`, each being a matrix with a row for each value of times
 #' and a column for each trap. The values of `h` are hazards and `H` are integrals of `h` since time zero.
 #'
-#' \eqn{\lambda_0} is the rate of detections at the activity center, and \eqn{\sigma} the home range size.
-#' \eqn{\phi} is the magnitude of the wave, 0 = standard SCR and 1=max possible.
+#'
+#' \eqn{\lambda_0} is the rate of detections at the activity center, and \eqn{\sigma} the spatial scale. \cr
+#' The hazard of standard SCR is multiplied by \eqn{1 + A\;\text{cos}(2\pi F(t - P))} \cr
+#' \eqn{A} is the magnitude of the wave, 0 = standard SCR and 1=max possible. \cr
+#' \eqn{F} is the frequency of the wave \cr
+#' \eqn{P} is the phase shift. The maxima of the wave occur at P + \eqn{\frac{k}{F}} for k = 0,1,2...
 #'
 #' @inheritParams hazard_SCR
-#' @param pars vector of pars: \eqn{\lambda_0}, \eqn{\sigma} and \eqn{\phi}
+#' @param pars vector of pars: \eqn{\lambda_0}, \eqn{\sigma}, \eqn{A}, \eqn{F}, \eqn{P}
 #' @returns two matrices with hazards and integrals, see details
 #' @export
 
@@ -189,7 +193,13 @@ hazard_cosine <- function(s, C, duration, pars, times, capthist = NULL){
     stop("Lambda0 and sigma must be positive")
   }
   if ((pars[3] > 1) || (pars[3] < 0)){
-    stop("phi must be between 0 and 1 (inclusive)")
+    stop("A must be between 0 and 1 (inclusive)")
+  }
+  if (pars[4] <= 0){
+    stop("F must be positive")
+  }
+  if ((pars[5] <= 0) || (pars[5] > (1/pars[4]))){
+    stop("P must be between 0 and 1/F")
   }
 
   K <- nrow(C)
@@ -197,15 +207,18 @@ hazard_cosine <- function(s, C, duration, pars, times, capthist = NULL){
 
   lambda0 <- pars[1]
   sigma <- pars[2]
-  phi <- pars[3]
+  A <- pars[3]
+  Fr <- pars[4]
+  P <- pars[5]
+
 
 
   loci = S - C
   dist2 = loci[,1]^2 + loci[,2]^2
 
   trap_rates = exp(-dist2/ (2 * sigma^2))
-  time_rates = lambda0 * (1 + phi * cos(2*pi*times))
-  time_ints = lambda0 * (times + (phi * sin(2*pi*times) / (2 * pi)))
+  time_rates = lambda0 * (1 + A * cos(2*pi*Fr*(times - P)))
+  time_ints = lambda0 * (times + (A * sin(pi*Fr*times) * cos(pi*Fr*(2*P - times)) / (Fr * pi)))
   h = time_rates %*% t(trap_rates)
   H = time_ints %*% t(trap_rates)
   return(list(h = h, H = H))

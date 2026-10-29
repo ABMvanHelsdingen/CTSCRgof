@@ -126,7 +126,7 @@ simulate_SESCR <- function(S, C, duration, pars){
 #'
 #' All individuals and terrain homogeneous
 #' @inheritParams simulate_SCR
-#' @param pars vector of pars: \eqn{\lambda_0}, \eqn{\sigma} and \eqn{\phi}
+#' @param pars vector of pars: \eqn{\lambda_0}, \eqn{\sigma}, \eqn{A}, \eqn{F}, \eqn{P}
 #' @returns individuals are numbered according to their row in `S`.
 #' @export
 
@@ -136,8 +136,17 @@ simulate_cosine <- function(S, C, duration, pars){
   if (!(all(pars[1:2] > 0))){
     stop("Lambda0 and sigma must be positive")
   }
+  if (!(all(pars[1:2] > 0))){
+    stop("Lambda0 and sigma must be positive")
+  }
   if ((pars[3] > 1) || (pars[3] < 0)){
-    stop("phi must be between 0 and 1 (inclusive)")
+    stop("A must be between 0 and 1 (inclusive)")
+  }
+  if (pars[4] <= 0){
+    stop("F must be positive")
+  }
+  if ((pars[5] <= 0) || (pars[5] > (1/pars[4]))){
+    stop("P must be between 0 and 1/F")
   }
 
   K <- nrow(C)
@@ -146,7 +155,9 @@ simulate_cosine <- function(S, C, duration, pars){
 
   lambda0 <- pars[1]
   sigma <- pars[2]
-  phi <- pars[3]
+  A <- pars[3]
+  Fr <- pars[4]
+  P <- pars[5]
 
 
   # empty vectors for storing simulations
@@ -166,8 +177,8 @@ simulate_cosine <- function(S, C, duration, pars){
     for(k in 1:K){
 
       # Generate cosine Poisson point process
-      result <- IHSEP::simPois(int = function(x){mus[k] * (1 + (phi * cos(2*pi*x)))},
-                               cens = duration, int.M = mus[k] * (1 + phi))
+      result <- IHSEP::simPois(int = function(x){mus[k] * (1 + (A * cos(2*pi*Fr*(x - P))))},
+                               cens = duration, int.M = mus[k] * (1 + A))
 
       if (length(result) > 0){ # If animal is detected at that camera
         times <- append(times, result)

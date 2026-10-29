@@ -13,7 +13,7 @@ hazard_cosine(s, C, duration, pars, times, capthist = NULL)
 
 \item{duration}{duration of survey}
 
-\item{pars}{vector of pars: \eqn{\lambda_0}, \eqn{\sigma} and \eqn{\phi}}
+\item{pars}{vector of pars: \eqn{\lambda_0}, \eqn{\sigma}, \eqn{A}, \eqn{F}, \eqn{P}}
 
 \item{times}{times at which to evaluate hazards and their integrals}
 
@@ -25,12 +25,15 @@ individual IDs numbered 1:m in the second, and trap IDs numbered 1:K in the thir
 two matrices with hazards and integrals, see details
 }
 \description{
-Calculates the hazard and integrals of the hazard for a cosine wave detection function. See the PhD thesis of G. Distiller, 2016
+Calculates the hazard and integrals of the hazard for a cosine wave detection function.
 }
 \details{
 Returns a list with elements \code{h} and \code{H}, each being a matrix with a row for each value of times
 and a column for each trap. The values of \code{h} are hazards and \code{H} are integrals of \code{h} since time zero.
 
-\eqn{\lambda_0} is the rate of detections at the activity center, and \eqn{\sigma} the home range size.
-\eqn{\phi} is the magnitude of the wave, 0 = standard SCR and 1=max possible.
+\eqn{\lambda_0} is the rate of detections at the activity center, and \eqn{\sigma} the spatial scale. \cr
+The hazard of standard SCR is multiplied by \eqn{1 + A \text{cos}(2\pi F(t - P))} \cr
+\eqn{A} is the magnitude of the wave, 0 = standard SCR and 1=max possible. \cr
+\eqn{F} is the frequency of the wave \cr
+\eqn{P} is the phase shift. The maxima of the wave occur at P + \eqn{\frac{k}{F}} for k = 0,1,2...
 }
